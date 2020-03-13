@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  UserPoolDomainRoute53Linker:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: 
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:273450712882:applications/amazon-cognito-custom-domain-link
+        SemanticVersion: 1.0.0
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: us-east-2_87lhunrJC
+      Domain: auth.simonw-aws.cloud
+      CustomDomainConfig:
+        CertificateArn: arn:aws:acm:us-east-1:273450712882:certificate/86e843a2-e0d3-496c-93b5-d9762da974f9
