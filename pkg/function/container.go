@@ -26,6 +26,16 @@ var (
 	ErrInvalidCreateRecordValue = errors.New("invalid value provided for CreateRecord flag")
 )
 
+// CreationState defines the possible values for CreateRecord
+type CreationState string
+
+const (
+	// CreationEnabled ...
+	CreationEnabled CreationState = "ENABLED"
+	// CreationDisabled ...
+	CreationDisabled CreationState = "DISABLED"
+)
+
 // Container contains the dependencies and business logic for the amazon-cognito-custom-domain-link Lambda function.
 type Container struct {
 	Route53                 route53iface.Route53API
@@ -49,6 +59,7 @@ var noop = make(map[string]interface{})
 // This custom resource expects two parameters to be set Route53HostedZoneID and CognitoUserPoolDomain.
 func (c *Container) GetHandler() cfn.CustomResourceFunction {
 	return func(ctx context.Context, event cfn.Event) (string, map[string]interface{}, error) {
+		log.Infof("Got resource properties: %v", event.ResourceProperties)
 		if event.PhysicalResourceID == "" {
 			event.PhysicalResourceID = NewPhysicalResourceID(event)
 		}
@@ -60,16 +71,22 @@ func (c *Container) GetHandler() cfn.CustomResourceFunction {
 			return event.PhysicalResourceID, noop, ErrInvalidDomainName
 		}
 
-		var hz string
-		create, ok := event.ResourceProperties["CreateRecord"].(bool)
+		create, ok := event.ResourceProperties["CreateRecord"].(string)
 		if !ok {
-			log.Errorf("Found non-boolean value for CreateRecord: %v", event.ResourceProperties)
+			log.Errorf("Error during CreateRecord lookup: %v", ErrInvalidCreateRecordValue)
 			return event.PhysicalResourceID, noop, ErrInvalidCreateRecordValue
 		}
-		if create {
+		if create != string(CreationEnabled) && create != string(CreationDisabled) {
+			log.Errorf("Invalid CreateRecord value: %s", create)
+			return event.PhysicalResourceID, noop, ErrInvalidCreateRecordValue
+
+		}
+
+		var hz string
+		if create == string(CreationEnabled) {
 			hz, ok = event.ResourceProperties["HostedZoneID"].(string)
 			if !ok {
-				log.Errorf("Error during HostedZoneID lookup [CreateRecord is true]: %v", ErrInvalidHostedZoneID)
+				log.Errorf("Error during HostedZoneID lookup [CreateRecord is ENABLED]: %v", ErrInvalidHostedZoneID)
 				return event.PhysicalResourceID, noop, ErrInvalidHostedZoneID
 			}
 		}
@@ -79,13 +96,16 @@ func (c *Container) GetHandler() cfn.CustomResourceFunction {
 			log.Errorf("Error during GetPoolDistributionID: %v", err)
 			return event.PhysicalResourceID, noop, ErrInvalidDomainName
 		}
-
 		out := map[string]interface{}{
 			"CloudFrontDistributionDomainName": distribution,
 		}
-		if !create {
+
+		// TODO: Did the previous Stack event have CreateRecord set?
+		if create == string(CreationDisabled) {
+			log.Infof("Returning output: %v", out)
 			return event.PhysicalResourceID, out, nil
 		}
+
 		switch event.RequestType {
 		case cfn.RequestCreate:
 			return event.PhysicalResourceID, out, c.RunCreate(ctx, distribution, hz, domain)

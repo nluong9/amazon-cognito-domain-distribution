@@ -24,9 +24,11 @@ The solution: Deploy a Serverless Application Repository app which consists of a
 |Name           |Required |Description                                                                            |                 
 |---------------|---------|---------------------------------------------------------------------------------------|
 |Domain         |true     |The domain name to use for both the User Pool and the Route 53 record                  |
-|HostedZoneID   |true    |The ID of the Route 53 hosted zone associated with your registered domain.              |
-|CreateRecord   |false    |(true or false) A flag to signify if this resource should also create the alias record |
+|CreateRecord   |true     |(ENABLED or DISABLED) A flag to signify if this resource should also create the alias record |
+|HostedZoneID   |false    |The ID of the Route 53 hosted zone associated with your registered domain.             |
+
 These should not be mistaken for SAR application parameters. The SAR application takes no parameters, but the custom resource (Lambda function) that the SAR application deploys takes these 3 parameters.
+
 ## Usage
 These examples assume you are creating a [`AWS::Cognito::UserPoolDomain`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cognito-userpooldomain.html) in the same stack that you are using this custom resource. Note that deleting and recreating a `AWS::Cognito::UserPoolDomain` can take 15 minutes to fully create, 20 minutes to delete, and 1 hour for the deletion to fully propagate through AWS if you are planning on attempting frequent creations and deletions. It is also possible to deploy the Lambda function template seperately and interact with vanillia CloudFormation instead.
 
