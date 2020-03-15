@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  This template demonstrates how to use the amazon-cognito-custom-domain-link app after deploying 
+  the CloudFormation Custom Resource (Lambda function) seperately only for the DNS name 
+  of the CloudFront distribution
+
+Parameters:
+  Domain:
+    Type: String
+    Description: The domain name to use for both the User Pool and the Route 53 record
+    Default: auth.simonw-aws.cloud # Change with your domain name
+
+Resources:
+  UserPoolDomainRoute53Linker:
+    Type: AWS::CloudFormation::CustomResource
+    Version: 1.0.0
+    Properties:
+      ServiceToken: arn:aws:lambda:us-east-2:273450712882:function:amazon-cognito-custom-domain-link # Lambda in my AWS account
+      Domain: !Ref Domain
+
+  DNS:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: simonw-aws.cloud.
+      Name: !Ref Domain
+      Type: A
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront's managed hosted zone ID
+        DNSName: !GetAtt UserPoolDomainRoute53Linker.CloudFrontDistributionDomainName
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: us-east-2_87lhunrJC # Change with your user pool ID (e.g. !Ref YourUserPoolDomainResource)
+      Domain: !Ref Domain
+      CustomDomainConfig:
+        CertificateArn: arn:aws:acm:us-east-1:273450712882:certificate/86e843a2-e0d3-496c-93b5-d9762da974f9 # My example certificate
