@@ -21,24 +21,19 @@ The solution: Deploy a Serverless Application Repository app which consists of a
 4. ***IF*** your domain is internationalized or uses emojis, you ***MUST*** [convert](https://www.punycoder.com/) it to [Punycode](https://en.wikipedia.org/wiki/Punycode) before passing it as a parameter to the template. This Lambda function will make no attempt at doing the conversion for you. See the following page for more details on how Route 53 handles internationalized/unicode domains ("Formatting Internationalized Domain Names" section): https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html
 
 ## Custom Resource Parameters
-|Name           |Required |Description                                                                            |Default         |                 
-|---------------|---------|---------------------------------------------------------------------------------------|-----------------
-|Domain         |true     |The domain name to use for both the User Pool and the Route 53 record                  |auth.example.com|
-|HostedZoneID   |false    |The ID of the Route 53 hosted zone associated with your registered domain.             |Z111111QQQQQQQ  |
-|CreateRecord   |false    |(true or false) A flag to signify if this resource should also create the alias record |false            |
-
+|Name           |Required |Description                                                                            |                 
+|---------------|---------|---------------------------------------------------------------------------------------|
+|Domain         |true     |The domain name to use for both the User Pool and the Route 53 record                  |
+|HostedZoneID   |true    |The ID of the Route 53 hosted zone associated with your registered domain.              |
+|CreateRecord   |false    |(true or false) A flag to signify if this resource should also create the alias record |
+These should not be mistaken for SAR application parameters. The SAR application takes no parameters, but the custom resource (Lambda function) that the SAR application deploys takes these 3 parameters.
 ## Usage
-These examples assume you are creating a [`AWS::Cognito::UserPoolDomain`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cognito-userpooldomain.html) in the same stack that you are using this custom resource. Note that deleting and recreating a `AWS::Cognito::UserPoolDomain` can take 15 minutes to fully create, 20 minutes to delete, and 1 hour for the deletion to fully propagate through AWS if you are planning on attempting frequent creations and deletions. All examples are available in the [examples folder](./examples)
+These examples assume you are creating a [`AWS::Cognito::UserPoolDomain`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cognito-userpooldomain.html) in the same stack that you are using this custom resource. Note that deleting and recreating a `AWS::Cognito::UserPoolDomain` can take 15 minutes to fully create, 20 minutes to delete, and 1 hour for the deletion to fully propagate through AWS if you are planning on attempting frequent creations and deletions. It is also possible to deploy the Lambda function template seperately and interact with vanillia CloudFormation instead.
 
-### 1. Serverless Application Model Template
-It is recommended that you use this custom resource as a Severless Application Repository nested app in your CloudFormation template.
- - Example that will only return the DNS name of the CloudFront distribution: [here](./examples/sam/no-create-sam-template.yaml)
- - Example that also creates an alias record: [here](./examples/sam/sam-template.yaml)
-
-### 2. CloudFormation Template
-It is also possible to deploy this function seperately and link the Lambda function's ARN as the ServiceToken propery of the `AWS::CloudFormation::CustomResource`. The default values of the 3 parameters are sufficient to safely deploy the SAR application and retrieve the Lambda function's Amazon Resource Name. 
- - Example that will only return the DNS name of the CloudFront distribution: [here](./examples/cloudformation/no-create-cfn-template.yaml)
- - Example that also creates a domain: [here](./examples/cloudformation/cfn-template.yaml)
+###  Serverless Application Model Template
+It is recommended that you use this custom resource as a Severless Application Repository nested app.
+ - Example that will only return the DNS name of the CloudFront distribution: [here](./examples/no-create-sam-template.yaml)
+ - Example that also creates an alias record: [here](./examples/sam-template.yaml)
 
 ## Contributing
 Have an idea for a feature to enhance this serverless application? Running into problems using it? Open an [issue](https://github.com/swoldemi/amazon-cognito-custom-domain-link/issues) or [pull request](https://github.com/swoldemi/amazon-cognito-custom-domain-link/pulls)!
@@ -58,15 +53,15 @@ make destroy       # Destroy the CloudFormation stack tied to the SAR app
 
 ### Behvaior
 Here are the Route 53 behaviors of this custom resource on each CloudFormation event. These only apply if the `CreateRecord` parameter is `true`. In all 3 event types, this resource will first get the DNS name of the CloudFormation distribution backing your Cognito User Pool domain and return it as an output attribute.
-- `CREATE`
+- Stack `CREATE`
   1. Creates a new Route 53 Record Set (A Record) which will alias your custom domain against this distribution.
-- `UPDATE`
-  1. Compares the existing record with the new DNS name.
-  2. No operation is performed if they are the same. 
-  3. If they are the same, the existing record is deleted and a new record is created.  
-- `DELETE`
-  1. Check for existing record matching the provided parameters and deletes the existing Route 53 Record Set (A Record).
-  2. Note: You create any traffic policies, this resource will not delete them. If you do not want to continue paying ($50/month) for the policies, remember to delete them.
+- Stack `UPDATE`
+  1. Ccompares the existing record with the new DNS name.
+  2. If the records are the same, no operation is performed. 
+  3. If they are different, the old record is deleted, and the new record is created. A record `UPSERT` is not done because a different hosted zone can be provided.
+- Stack `DELETE`
+  1. Check for an existing record matching the provided parameters and delete it.
+  2. Note: You create any traffic policy records, this resource will not delete them. If you do not want to continue paying ($50/month) for the policy records, remember to delete them.
 
 ### Return Values
 #### Fn::GetAtt
