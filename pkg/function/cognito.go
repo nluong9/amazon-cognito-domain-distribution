@@ -11,11 +11,11 @@ import (
 )
 
 // ErrInvalidDomainState is a controlled error returned for the purpose
-// of retrying with back off on the DescribeUserPoolDomain API
+// of retrying with back off on the DescribeUserPoolDomain API.
 var ErrInvalidDomainState = errors.New("domain does not have cloudfront distribution or has failed")
 
-// GetPoolDistribution gets CloudFront Distribution associated
-// with a Cognito User Pool Custom Domain. Because the domain does not have
+// GetPoolDistribution gets the DNS name of the CloudFront distribution associated
+// with a Cognito User Pool custom domain. Because the domain does not have
 // the DNS name of the CloudFront distribution immediately available, this method
 // will retry, with back off, until it is available.
 func (c *Container) GetPoolDistribution(ctx context.Context, domain string) (string, error) {
@@ -35,10 +35,10 @@ func (c *Container) GetPoolDistribution(ctx context.Context, domain string) (str
 		}
 		distribution = aws.StringValue(output.DomainDescription.CloudFrontDistribution)
 		status := aws.StringValue(output.DomainDescription.Status)
-		isValidStatus := (status == cognitoidentityprovider.DomainStatusTypeCreating || status == cognitoidentityprovider.DomainStatusTypeActive)
+		desiredState := (status == cognitoidentityprovider.DomainStatusTypeCreating || status == cognitoidentityprovider.DomainStatusTypeActive)
 		log.Debugf("Got user pool domain status: %s", status)
 
-		if distribution == "" || !isValidStatus {
+		if distribution == "" || !desiredState { // not ready OR reached DELETING or FAILED
 			return ErrInvalidDomainState
 		}
 		return nil
@@ -47,6 +47,6 @@ func (c *Container) GetPoolDistribution(ctx context.Context, domain string) (str
 	if err := backoff.Retry(operation, backoff.NewExponentialBackOff()); err != nil {
 		return "", err
 	}
-	log.Infof("Got CloudFront Distribution [%s]", distribution)
+	log.Infof("Got CloudFront Distribution [%s]", distribution) // example: d111111abcdef8.cloudfront.net
 	return distribution, nil
 }
