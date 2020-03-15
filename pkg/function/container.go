@@ -3,6 +3,7 @@ package function
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -12,6 +13,17 @@ import (
 	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider/cognitoidentityprovideriface"
 	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	// ErrInvalidHostedZoneID ...
+	ErrInvalidHostedZoneID = errors.New("resource: invalid route 53 hosted zone ID provided")
+
+	// ErrInvalidDomainName ...
+	ErrInvalidDomainName = errors.New("resource: invalid domain name provided")
+
+	// ErrInvalidCreateRecordValue ...
+	ErrInvalidCreateRecordValue = errors.New("resource: invalid value provided for CreateRecord flag")
 )
 
 // Container contains the dependencies and business logic for the amazon-cognito-custom-domain-link Lambda function.
@@ -38,24 +50,55 @@ var noop = make(map[string]interface{})
 func (c *Container) GetHandler() cfn.CustomResourceFunction {
 	return func(ctx context.Context, event cfn.Event) (string, map[string]interface{}, error) {
 		if event.PhysicalResourceID == "" {
-			event.PhysicalResourceID = generatePRID(event)
+			event.PhysicalResourceID = NewPhysicalResourceID(event)
 		}
 		log.Infof("Using physical resource ID: %s", event.PhysicalResourceID)
 
+		domain, ok := event.ResourceProperties["Domain"].(string)
+		if !ok {
+			log.Errorf("Error during Domain lookup: %v", ErrInvalidDomainName)
+			return event.PhysicalResourceID, noop, ErrInvalidDomainName
+		}
+
+		var hz string
+		create, ok := event.ResourceProperties["CreateRecord"].(bool)
+		if !ok {
+			log.Errorf("Found non-boolean value for CreateRecord: %v", event.ResourceProperties)
+			return event.PhysicalResourceID, noop, ErrInvalidCreateRecordValue
+		}
+		if create {
+			hz, ok = event.ResourceProperties["HostedZoneID"].(string)
+			if !ok {
+				log.Errorf("Error during HostedZoneID lookup [CreateRecord is true]: %v", ErrInvalidHostedZoneID)
+				return event.PhysicalResourceID, noop, ErrInvalidHostedZoneID
+			}
+		}
+
+		distribution, err := c.GetPoolDistribution(ctx, domain)
+		if err != nil {
+			log.Errorf("Error during GetPoolDistributionID: %v", err)
+			return event.PhysicalResourceID, noop, ErrInvalidDomainName
+		}
+
+		out := map[string]interface{}{
+			"CloudFrontDistributionDomainName": distribution,
+		}
 		switch event.RequestType {
 		case cfn.RequestCreate:
-			return event.PhysicalResourceID, noop, c.RunCreate(ctx, event)
-		case cfn.RequestUpdate, cfn.RequestDelete:
-			log.Info("Request type is not CREATE; no operation")
-			return event.PhysicalResourceID, noop, nil
+			return event.PhysicalResourceID, out, c.RunCreate(ctx, distribution, hz, domain)
+		case cfn.RequestUpdate:
+			return event.PhysicalResourceID, out, c.RunUpdate(ctx, distribution, hz, domain, event.OldResourceProperties)
+		case cfn.RequestDelete:
+			return event.PhysicalResourceID, out, c.RunDelete(ctx, distribution, hz, domain)
 		}
-		return event.PhysicalResourceID, noop, fmt.Errorf("got invalid requet type: %s", event.RequestType)
+		return event.PhysicalResourceID, out, fmt.Errorf("got invalid request type: %s", event.RequestType)
 	}
 }
 
+// NewPhysicalResourceID creates a new physical resource ID.
 // Credit to @dweomer
 // https://github.com/dweomer/aws-cloudformation-keypair/blob/master/aws/ec2/keypair/resource.go#L131-L145
-func generatePRID(event cfn.Event) string {
+func NewPhysicalResourceID(event cfn.Event) string {
 	rns := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	gen := rand.New(rand.NewSource(time.Now().UnixNano()))
 	rnd := make([]byte, 12)
