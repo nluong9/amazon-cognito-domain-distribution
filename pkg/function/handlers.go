@@ -4,40 +4,20 @@ import (
 	"context"
 	"errors"
 
-	"github.com/aws/aws-lambda-go/cfn"
 	log "github.com/sirupsen/logrus"
 )
 
 var (
-	// ErrInvalidHostedZoneID ...
-	ErrInvalidHostedZoneID = errors.New("resource: invalid route 53 hosted zone ID provided")
+	// ErrInvalidExistingDomain ...
+	ErrInvalidExistingDomain = errors.New("resource: unable to find previous domain")
 
-	// ErrInvalidDomainName ...
-	ErrInvalidDomainName = errors.New("resource: invalid domain name provided")
-
-	// ErrNotImplemented ...
-	ErrNotImplemented = errors.New("resource: method not implemented")
+	// ErrInvalidExistingHostedZone ...
+	ErrInvalidExistingHostedZone = errors.New("resource: unable to find previous hosted zone")
 )
 
 // RunCreate runs the operations necessary for a CREATE event.
-func (c *Container) RunCreate(ctx context.Context, event cfn.Event) error {
-	hz, ok := event.ResourceProperties["HostedZoneID"].(string)
-	if !ok {
-		log.Errorf("Error during HostedZoneID lookup: %v", ErrInvalidHostedZoneID)
-		return ErrInvalidHostedZoneID
-	}
-	domain, ok := event.ResourceProperties["Domain"].(string)
-	if !ok {
-		log.Errorf("Error during Domain lookup: %v", ErrInvalidDomainName)
-		return ErrInvalidDomainName
-	}
-
-	distribution, err := c.GetPoolDistribution(ctx, domain)
-	if err != nil {
-		log.Errorf("Error during GetPoolDistributionID: %v", err)
-		return err
-	}
-	if err := c.UpsertAlias(ctx, distribution, hz, domain); err != nil {
+func (c *Container) RunCreate(ctx context.Context, distribution string, hz, domain string) error {
+	if err := c.CreateAlias(ctx, distribution, &Domain{HostedZoneID: hz, Name: domain}); err != nil {
 		log.Errorf("Error creating custom domain name")
 		return err
 	}
@@ -45,11 +25,38 @@ func (c *Container) RunCreate(ctx context.Context, event cfn.Event) error {
 }
 
 // RunUpdate runs the operations necessary for a UPDATE event.
-func (c *Container) RunUpdate(ctx context.Context, event cfn.Event) error {
-	return ErrNotImplemented
+// FIXME: RunUpdate currently does not account for DNS propagation. If a resource is created
+// and updated quickly, the state of the update may not match desired behavior.
+// The idempotence of Route 53 may be enough to account for this.
+func (c *Container) RunUpdate(ctx context.Context, distribution, hz, domain string, oldProperities map[string]interface{}) error {
+	oldDomain, ok := oldProperities["Domain"].(string)
+	if !ok {
+		return ErrInvalidExistingDomain
+	}
+	oldHostedZoneID, ok := oldProperities["HostedZoneID"].(string)
+	if !ok {
+		return ErrInvalidExistingDomain
+	}
+	od := &Domain{
+		HostedZoneID: oldHostedZoneID,
+		Name:         oldDomain,
+	}
+	nd := &Domain{
+		HostedZoneID: hz,
+		Name:         domain,
+	}
+	if err := c.UpsertAlias(ctx, distribution, od, nd); err != nil {
+		log.Errorf("Error updating custom domain name")
+		return err
+	}
+	return nil
 }
 
 // RunDelete runs the operations necessary for a DELETE event.
-func (c *Container) RunDelete(ctx context.Context, event cfn.Event) error {
-	return ErrNotImplemented
+func (c *Container) RunDelete(ctx context.Context, distribution, hz, domain string) error {
+	if err := c.DeleteAlias(ctx, distribution, &Domain{HostedZoneID: hz, Name: domain}); err != nil {
+		log.Errorf("Error deleting custom domain name")
+		return err
+	}
+	return nil
 }
