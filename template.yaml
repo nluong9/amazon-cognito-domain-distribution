@@ -4,30 +4,23 @@ Transform: AWS::Serverless-2016-10-31
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: amazon-cognito-custom-domain-link
-    Description: A CloudFormation Custom Resource for automatically linking your Cognito User Pool's custom domain to a domain in Amazon Route53
+    Description: A CloudFormation Custom Resource for automatically linking your Cognito User Pool's custom domain to a domain in Amazon Route 53
     Author: Simon Woldemichael
     SpdxLicenseId: Apache-2.0
     LicenseUrl: LICENSE
     ReadmeUrl: README.md
-    Labels: ["cognito", "custom-resource", "route53", "user-pool-domain"]
+    Labels:
+      [
+        "cognito",
+        "cloudformation",
+        "custom-resource",
+        "route53",
+        "user-pool-domain",
+      ]
     HomePageUrl: https://github.com/swoldemi/amazon-cognito-custom-domain-link
     SemanticVersion: 1.0.0
     SourceCodeUrl: https://github.com/swoldemi/amazon-cognito-custom-domain-link
 
-# Parameters:
-#   CognitoUserPoolDomain:
-#     Type: String
-#     Description: Required. The Cognito domain associated with the the user pool.
-#   Route53HostedZoneID: 
-#     Type: String
-#     Description: Required. The ID of the hosted zone for your Route 53 domain name.
-#   DomainName:
-#     Type: String
-#     Decription: Required. The custom domain name you would like to associate with the Cognito domain.
-#   ACMCertificateARN:
-#     Type: String
-#     Decription: Requried. The ARN of the ACM certificate associated wtih your Cognito User Pool Custom Domain. This certificate MUST exist in us-east-1.
-  
 Resources:
   CognitoCustomDomainLinkExecutionRole:
     Type: AWS::IAM::Role
@@ -47,14 +40,13 @@ Resources:
         - PolicyDocument:
             Statement:
               - Action:
-                  - route53:ChangeResourceRecordSets
                   - cognito-idp:DescribeUserPoolDomain
-                  - cloudfront:UpdateDistribution
+                  - route53:ChangeResourceRecordSets
+                  - route53:ListResourceRecordSets
                 Effect: Allow
                 Resource: "*"
             Version: "2012-10-17"
           PolicyName: CognitoCustomDomainLinkLambdaPolicy
-
 
   CognitoCustomDomainLinkFunction:
     Type: AWS::Serverless::Function
@@ -65,7 +57,7 @@ Resources:
       Runtime: go1.x
       MemorySize: 128
       Role: !GetAtt CognitoCustomDomainLinkExecutionRole.Arn
-      Timeout: 900 # Max timeout to account for CloudFront Distribution DNS name availability
+      Timeout: 900 # Set maximum 15 minute timeout to account for CloudFront Distribution DNS name availability
 
 Outputs:
   LambdaFunctionARN:
