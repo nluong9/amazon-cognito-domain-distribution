@@ -83,6 +83,9 @@ func (c *Container) GetHandler() cfn.CustomResourceFunction {
 		out := map[string]interface{}{
 			"CloudFrontDistributionDomainName": distribution,
 		}
+		if !create {
+			return event.PhysicalResourceID, out, nil
+		}
 		switch event.RequestType {
 		case cfn.RequestCreate:
 			return event.PhysicalResourceID, out, c.RunCreate(ctx, distribution, hz, domain)
