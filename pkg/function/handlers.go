@@ -9,10 +9,10 @@ import (
 
 var (
 	// ErrInvalidExistingDomain ...
-	ErrInvalidExistingDomain = errors.New("resource: unable to find previous domain")
+	ErrInvalidExistingDomain = errors.New("unable to find previous domain")
 
 	// ErrInvalidExistingHostedZone ...
-	ErrInvalidExistingHostedZone = errors.New("resource: unable to find previous hosted zone")
+	ErrInvalidExistingHostedZone = errors.New("unable to find previous hosted zone")
 )
 
 // RunCreate runs the operations necessary for a CREATE event.

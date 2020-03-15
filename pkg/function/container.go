@@ -17,13 +17,13 @@ import (
 
 var (
 	// ErrInvalidHostedZoneID ...
-	ErrInvalidHostedZoneID = errors.New("resource: invalid route 53 hosted zone ID provided")
+	ErrInvalidHostedZoneID = errors.New("invalid route 53 hosted zone ID provided")
 
 	// ErrInvalidDomainName ...
-	ErrInvalidDomainName = errors.New("resource: invalid domain name provided")
+	ErrInvalidDomainName = errors.New("invalid domain name provided")
 
 	// ErrInvalidCreateRecordValue ...
-	ErrInvalidCreateRecordValue = errors.New("resource: invalid value provided for CreateRecord flag")
+	ErrInvalidCreateRecordValue = errors.New("invalid value provided for CreateRecord flag")
 )
 
 // Container contains the dependencies and business logic for the amazon-cognito-custom-domain-link Lambda function.
