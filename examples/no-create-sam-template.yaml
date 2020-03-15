@@ -11,14 +11,21 @@ Parameters:
     Default: auth.simonw-aws.cloud # Change with your domain name
 
 Resources:
-  UserPoolDomainRoute53Linker:
+  AmazonCognitoCustomDomainLinkApplication:
     Type: AWS::Serverless::Application
     Properties:
       Location:
-        ApplicationId: arn:aws:serverlessrepo:us-east-1:273450712882:applications/amazon-cognito-custom-domain-link # Do not change
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:273450712882:applications/amazon-cognito-custom-domain-link
         SemanticVersion: 1.0.0
-        Parameters:
-          Domain: !Ref Domain
+  
+  UserPoolDomainRoute53Linker:
+    Type: AWS::CloudFormation::CustomResource
+    Version: 1.0.0
+    Properties:
+      ServiceToken: !GetAtt AmazonCognitoCustomDomainLinkApplication.LambdaFunctionARN # Lambda function that is now in your AWS account
+      HostedZoneID: Z3I7ZCKH5Q5GZX # Change with your hosted 
+      CreateRecord: false
+      Domain: !Ref Domain
 
   DNS:
     Type: AWS::Route53::RecordSet
