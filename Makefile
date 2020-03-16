@@ -3,7 +3,7 @@ all : tmpl check build sam-package sam-deploy sam-tail-logs
 
 S3_BUCKET ?= swoldemi-tmp
 DEFAULT_REGION ?= us-east-2
-DEFAULT_STACK_NAME ?= amazon-cognito-custom-domain-link
+DEFAULT_STACK_NAME ?= amazon-cognito-domain-distribution
 
 GOBIN := $(GOPATH)/bin
 GOIMPORTS := $(GOBIN)/goimports
@@ -64,7 +64,7 @@ stack-describe:
 
 .PHONY: sam-tail-logs
 sam-tail-logs:
-	sam logs --name amazon-cognito-custom-domain-link --tail
+	sam logs --name amazon-cognito-domain-distribution --tail
 
 .PHONY: destroy
 destroy: clean
@@ -85,5 +85,5 @@ sar-public:
 	# update application-id parameter as needed
 	aws serverlessrepo put-application-policy \
 		--region us-east-1 \
-		--application-id arn:aws:serverlessrepo:us-east-1:273450712882:applications/amazon-cognito-custom-domain-link \
+		--application-id arn:aws:serverlessrepo:us-east-1:273450712882:applications/amazon-cognito-domain-distribution \
 		--statements Principals=*,Actions=Deploy

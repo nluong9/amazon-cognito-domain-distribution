@@ -3,7 +3,7 @@ env:
   variables:
     GOPATH: /go
     GOBIN: /go/bin
-    ROOTPATH: /go/src/github.com/swoldemi/amazon-cognito-custom-domain-link
+    ROOTPATH: /go/src/github.com/swoldemi/amazon-cognito-domain-distribution
 phases:
   install:
     runtime-versions:

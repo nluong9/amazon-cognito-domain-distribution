@@ -3,8 +3,8 @@ Transform: AWS::Serverless-2016-10-31
 
 Metadata:
   AWS::ServerlessRepo::Application:
-    Name: amazon-cognito-custom-domain-link
-    Description: A CloudFormation Custom Resource for automatically linking your Cognito User Pool's custom domain to a domain in Amazon Route 53
+    Name: amazon-cognito-domain-distribution
+    Description: An AWS CloudFormation Custom Resource for retrieving the DNS name of the Amazon CloudFront distribution backing your Amazon Cognito User Pool's custom domain
     Author: Simon Woldemichael
     SpdxLicenseId: Apache-2.0
     LicenseUrl: LICENSE
@@ -17,9 +17,9 @@ Metadata:
         "route53",
         "user-pool-domain",
       ]
-    HomePageUrl: https://github.com/swoldemi/amazon-cognito-custom-domain-link
+    HomePageUrl: https://github.com/swoldemi/amazon-cognito-domain-distribution
     SemanticVersion: 1.0.0
-    SourceCodeUrl: https://github.com/swoldemi/amazon-cognito-custom-domain-link
+    SourceCodeUrl: https://github.com/swoldemi/amazon-cognito-domain-distribution
 
 Resources:
   CognitoCustomDomainLinkExecutionRole:
@@ -41,8 +41,6 @@ Resources:
             Statement:
               - Action:
                   - cognito-idp:DescribeUserPoolDomain
-                  - route53:ChangeResourceRecordSets
-                  - route53:ListResourceRecordSets
                 Effect: Allow
                 Resource: "*"
             Version: "2012-10-17"
@@ -50,9 +48,9 @@ Resources:
 
   CognitoCustomDomainLinkFunction:
     Type: AWS::Serverless::Function
-    Description: Lambda handler for amazon-cognito-custom-domain-link
+    Description: Lambda handler for amazon-cognito-domain-distribution
     Properties:
-      FunctionName: amazon-cognito-custom-domain-link
+      FunctionName: amazon-cognito-domain-distribution
       Handler: main
       Runtime: go1.x
       MemorySize: 128

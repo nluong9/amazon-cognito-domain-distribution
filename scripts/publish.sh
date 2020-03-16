@@ -1,21 +1,21 @@
 #!/bin/bash
 
 BUCKET_PREFIX=swoldemi
-APPLICATION=amazon-cognito-custom-domain-link
+APPLICATION=amazon-cognito-domain-distribution
 ACCOUNT=273450712882
 declare -a REGIONS=(
     "us-east-1"
-    "us-east-2"
-    "us-west-2"
-    "ap-south-1"
-    "ap-northeast-2"
-    "ap-southeast-1"
-    "ap-southeast-2"
-    "ap-northeast-2"
-    "ca-central-1"
-    "eu-central-1"
-    "eu-west-1"
-    "eu-west-2"
+    # "us-east-2"
+    # "us-west-2"
+    # "ap-south-1"
+    # "ap-northeast-2"
+    # "ap-southeast-1"
+    # "ap-southeast-2"
+    # "ap-northeast-2"
+    # "ca-central-1"
+    # "eu-central-1"
+    # "eu-west-1"
+    # "eu-west-2"
 )
 
 publish_all_regions()
