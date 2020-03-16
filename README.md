@@ -33,7 +33,7 @@ For more information about using the Fn::GetAtt intrinsic function, see [Fn::Get
 - `CloudFrontDistributionDomainName`
     - The DNS name of the CloudFront distribution associated with the Cognito User Pool domain, such as d111111abcdef8.cloudfront.net.
 
-![output-example](https://raw.githubusercontent.com/swoldemi/amazon-cognito-domain-distribution/master/screenshots/output.png)
+![output-example](https://raw.githubusercontent.com/swoldemi/amazon-cognito-domain-distribution/master/screenshots/output.PNG)
 
 
 ## Usage
