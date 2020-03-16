@@ -47,5 +47,5 @@ Resources:
 
 Outputs:
   CloudFrontDistributionDomainName:
-    Value: !Ref UserPoolDomainDistribution.CloudFrontDistributionDomainName
+    Value: !GetAtt UserPoolDomainDistribution.CloudFrontDistributionDomainName
     Description: The DNS name of the CloudFront distribtuion backing the Cognito User Pool domain.

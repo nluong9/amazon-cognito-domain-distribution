@@ -5,17 +5,17 @@ APPLICATION=amazon-cognito-domain-distribution
 ACCOUNT=273450712882
 declare -a REGIONS=(
     "us-east-1"
-    # "us-east-2"
-    # "us-west-2"
-    # "ap-south-1"
-    # "ap-northeast-2"
-    # "ap-southeast-1"
-    # "ap-southeast-2"
-    # "ap-northeast-2"
-    # "ca-central-1"
-    # "eu-central-1"
-    # "eu-west-1"
-    # "eu-west-2"
+    "us-east-2"
+    "us-west-2"
+    "ap-south-1"
+    "ap-northeast-2"
+    "ap-southeast-1"
+    "ap-southeast-2"
+    "ap-northeast-2"
+    "ca-central-1"
+    "eu-central-1"
+    "eu-west-1"
+    "eu-west-2"
 )
 
 publish_all_regions()
@@ -29,7 +29,7 @@ publish_all_regions()
 
     aws serverlessrepo put-application-policy \
         --region us-east-1 \
-        --application-id arn:aws:serverlessrepo:us-east-1:$ACCOUNT:applications/$APPLICATION \
+        --application-id arn:aws:serverlessrepo:us-east-1:273450712882:applications/amazon-cognito-domain-distribution \
         --statements Principals=*,Actions=Deploy
 }
 
