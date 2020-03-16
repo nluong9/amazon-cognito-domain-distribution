@@ -21,6 +21,15 @@ var ErrInvalidDomainState = errors.New("domain does not have cloudfront distribu
 func (c *Container) GetPoolDistribution(ctx context.Context, domain string) (string, error) {
 	var distribution string
 
+	deleted, err := c.CheckPoolDeleted(ctx, domain)
+	if err != nil {
+		return "", err
+	}
+	if deleted {
+		log.Infof("Pool %s has already been deleted", domain)
+		return "", nil
+	}
+
 	operation := func() error {
 		log.Infof("Describing user pool domain: %s", domain)
 		input := &cognitoidentityprovider.DescribeUserPoolDomainInput{
@@ -29,7 +38,7 @@ func (c *Container) GetPoolDistribution(ctx context.Context, domain string) (str
 		if err := input.Validate(); err != nil {
 			return err
 		}
-		output, err := c.CognitoIdentityProvider.DescribeUserPoolDomain(input)
+		output, err := c.CognitoIdentityProvider.DescribeUserPoolDomainWithContext(ctx, input)
 		if err != nil {
 			return err
 		}
@@ -49,4 +58,25 @@ func (c *Container) GetPoolDistribution(ctx context.Context, domain string) (str
 	}
 	log.Infof("Got CloudFront Distribution [%s]", distribution) // example: d111111abcdef8.cloudfront.net
 	return distribution, nil
+}
+
+// CheckPoolDeleted checks if a User Pool domain has already been deleted or is in failure state.
+func (c *Container) CheckPoolDeleted(ctx context.Context, domain string) (bool, error) {
+	log.Infof("Verifying user pool has not been deleted yet: %s", domain)
+	input := &cognitoidentityprovider.DescribeUserPoolDomainInput{
+		Domain: aws.String(domain),
+	}
+	if err := input.Validate(); err != nil {
+		return true, err
+	}
+	output, err := c.CognitoIdentityProvider.DescribeUserPoolDomainWithContext(ctx, input)
+	if err != nil {
+		return true, err
+	}
+	state := aws.StringValue(output.DomainDescription.Status)
+	deletedState := (state == cognitoidentityprovider.DomainStatusTypeDeleting || state == cognitoidentityprovider.DomainStatusTypeFailed)
+	if deletedState {
+		return true, nil
+	}
+	return false, nil
 }
