@@ -96,6 +96,10 @@ func (c *Container) GetHandler() cfn.CustomResourceFunction {
 			log.Errorf("Error during GetPoolDistributionID: %v", err)
 			return event.PhysicalResourceID, noop, ErrInvalidDomainName
 		}
+		if distribution == "" {
+			log.Warn("Stack deletion detected; user pool domain did not DependOn linker.")
+			distribution = "DELETED"
+		}
 		out := map[string]interface{}{
 			"CloudFrontDistributionDomainName": distribution,
 		}
@@ -112,9 +116,9 @@ func (c *Container) GetHandler() cfn.CustomResourceFunction {
 		case cfn.RequestUpdate:
 			return event.PhysicalResourceID, out, c.RunUpdate(ctx, distribution, hz, domain, event.OldResourceProperties)
 		case cfn.RequestDelete:
-			return event.PhysicalResourceID, out, c.RunDelete(ctx, distribution, hz, domain)
+			return event.PhysicalResourceID, noop, c.RunDelete(ctx, distribution, hz, domain)
 		}
-		return event.PhysicalResourceID, out, fmt.Errorf("got invalid request type: %s", event.RequestType)
+		return event.PhysicalResourceID, noop, fmt.Errorf("got invalid request type: %s", event.RequestType)
 	}
 }
 
