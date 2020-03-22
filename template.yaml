@@ -18,7 +18,7 @@ Metadata:
         "user-pool-domain",
       ]
     HomePageUrl: https://github.com/swoldemi/amazon-cognito-domain-distribution
-    SemanticVersion: 1.0.0
+    SemanticVersion: 1.1.0
     SourceCodeUrl: https://github.com/swoldemi/amazon-cognito-domain-distribution
 
 Resources:
