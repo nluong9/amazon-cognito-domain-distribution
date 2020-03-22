@@ -14,6 +14,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// WithRetry is a hacky global flag to make it possible test GetPoolDistribution without retry. FIXME.
+var WithRetry = true
+
 // ErrInvalidDomainName ...
 var ErrInvalidDomainName = errors.New("invalid domain name provided")
 
@@ -29,12 +32,13 @@ func NewContainer(cognitoSvc cognitoidentityprovideriface.CognitoIdentityProvide
 	}
 }
 
-var noop = make(map[string]interface{})
-
 // GetHandler returns the function handler for the amazon-cognito-domain-distribution.
 // This custom resource expects two parameters to be set Route53HostedZoneID and CognitoUserPoolDomain.
 func (c *Container) GetHandler() cfn.CustomResourceFunction {
 	return func(ctx context.Context, event cfn.Event) (string, map[string]interface{}, error) {
+		out := map[string]interface{}{
+			"CloudFrontDistributionDomainName": "",
+		}
 		log.Infof("Got resource properties: %v", event.ResourceProperties)
 		if event.PhysicalResourceID == "" {
 			event.PhysicalResourceID = NewPhysicalResourceID(event)
@@ -44,25 +48,33 @@ func (c *Container) GetHandler() cfn.CustomResourceFunction {
 		domain, ok := event.ResourceProperties["Domain"].(string)
 		if !ok {
 			log.Errorf("Error during Domain lookup: %v", ErrInvalidDomainName)
-			return event.PhysicalResourceID, noop, ErrInvalidDomainName
+			return event.PhysicalResourceID, out, ErrInvalidDomainName
 		}
+		log.Infof("Got Cognito user pool domain name: %s", domain)
 
 		switch event.RequestType {
 		case cfn.RequestCreate, cfn.RequestUpdate:
-			distribution, err := c.GetPoolDistribution(ctx, domain)
+			deleted, err := c.CheckPoolDeleted(ctx, domain)
 			if err != nil {
-				log.Errorf("Error during GetPoolDistributionID: %v", err)
-				return event.PhysicalResourceID, noop, ErrInvalidDomainName
+				log.Errorf("Error during CheckPoolDeleted: %v", err)
+				return event.PhysicalResourceID, out, err
 			}
-			out := map[string]interface{}{
-				"CloudFrontDistributionDomainName": distribution,
+			if deleted {
+				log.Infof("Pool %s has already been deleted", domain)
+				return event.PhysicalResourceID, out, nil
 			}
+			distribution, err := c.GetPoolDistribution(ctx, domain, WithRetry)
+			if err != nil {
+				log.Errorf("Error during GetPoolDistribution: %v", err)
+				return event.PhysicalResourceID, out, err
+			}
+			out["CloudFrontDistributionDomainName"] = distribution
 			return event.PhysicalResourceID, out, nil
 		case cfn.RequestDelete:
 			log.Infof("Got DELETE event; no supported operation to perform")
-			return event.PhysicalResourceID, noop, nil
+			return event.PhysicalResourceID, out, nil
 		}
-		return event.PhysicalResourceID, noop, fmt.Errorf("got invalid request type: %s", event.RequestType)
+		return event.PhysicalResourceID, out, fmt.Errorf("got invalid request type: %s", event.RequestType)
 	}
 }
 
