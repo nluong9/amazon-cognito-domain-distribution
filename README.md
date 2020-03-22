@@ -9,7 +9,7 @@
 
 The problem: As of March 2020, Cognito User Pool domains created through CloudFormation do not return the DNS name of the CloudFront distribution backing them (see [here](https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/356) and [here](https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/58#issuecomment-539652016)). Because of this, you cannot link the domain to a custom domain you have in a Route53 hosted zone via CloudFormation.
 
-The solution: Deploy a Serverless Application Repository app which consists of a CloudFormation custom resource to help you do this! This resource will return the CloudFront distribution's DNS name and you can use it in a [`AWS::Route53::RecordSet`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html) delcaration. See [here](./example-sam-template.yaml) for an example.
+The solution: Deploy a Serverless Application Repository app which consists of a CloudFormation custom resource to help you do this! This resource will return the CloudFront distribution's DNS name and you can use it in a [`AWS::Route53::RecordSet`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html) delcaration. See [here](https://raw.githubusercontent.com/swoldemi/amazon-cognito-domain-distribution/master/example-sam-template.yaml) for an example.
 
 ![architecture](https://raw.githubusercontent.com/swoldemi/amazon-cognito-domain-distribution/master/screenshots/architecture.png)
 
@@ -43,13 +43,13 @@ It is recommended that you use this custom resource as a Severless Application R
 
 The provided example assumes you are creating a [`AWS::Cognito::UserPoolDomain`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cognito-userpooldomain.html) in the same stack that you are using this custom resource. Note that deleting and recreating a `AWS::Cognito::UserPoolDomain` can take 15 minutes to fully create, 20 minutes to delete, and 1 hour for the deletion to fully propagate through AWS if you are planning on attempting frequent creations and deletions. It is also possible to deploy the Lambda function template seperately and interact with vanillia CloudFormation instead.
 
-The example template is available [here](./example-sam-template.yaml).
+The example template is available [here](https://raw.githubusercontent.com/swoldemi/amazon-cognito-domain-distribution/master/example-sam-template.yaml).
 
 ## Contributing
 Have an idea for a feature to enhance this serverless application? Running into problems using it? Open an [issue](https://github.com/swoldemi/amazon-cognito-domain-distribution/issues) or [pull request](https://github.com/swoldemi/amazon-cognito-domain-distribution/pulls)!
 
 ### Development
-This application has been developed, built, and tested against [Go 1.14](https://golang.org/dl/), the latest version of the [Serverless Application Model CLI](https://github.com/awslabs/aws-sam-cli), and the latest version of the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html). A [Makefile](./Makefile) has been provided for convenience.
+This application has been developed, built, and tested against [Go 1.14](https://golang.org/dl/), the latest version of the [Serverless Application Model CLI](https://github.com/awslabs/aws-sam-cli), and the latest version of the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html). A [Makefile](https://github.com/swoldemi/amazon-cognito-domain-distribution/blob/master/Makefile) has been provided for convenience.
 
 ```
 make check         # Run Go linting tools
